@@ -15,7 +15,8 @@ p_load(tidyverse,  # Manipulacio de dataframes
        tidymodels, # Para modelos de ML
        rio,        # Importacion
        stargazer,
-       skimr)
+       skimr,
+       glmnet)
 
 
 getwd()
@@ -31,6 +32,7 @@ template <- import("Stores/submission_template.csv")
 rm(template)
 
 
+## IMPORTACION DE DATOS -----------
 # Importacion de base train y test
 data <- import("Stores/train.csv")
 data2 <- import("Stores/test.csv")
@@ -39,3 +41,51 @@ skim(data)
 glimpse(data)
 str(data)
 names(data)
+
+
+# Merge con variables de train y test
+data <- data %>% mutate(div = "train")
+data2 <- data2 %>% mutate(div = "test")
+
+data_tot <- rbind(data, data2)
+
+
+
+
+## CHEQUEO ESPACIAL LEAFLET ----------------
+latitud_central <- mean(data_tot$lat)
+longitud_central <- mean(data_tot$lon)
+
+leaflet() %>%
+  addTiles() %>%
+  setView(lng = longitud_central, lat = latitud_central, zoom = 10) %>% 
+  addCircles(lng = data_tot$lon, 
+             lat = data_tot$lat,
+             color = data_tot$div)
+
+
+
+## MANEJO DE TEXTOS ---------------------
+# Elementos de interes:
+# - garaje
+# - habitaciones
+# - bano
+# - terraza
+# - piso
+# - parqueadero
+
+data_tot$description[1]
+data_tot$description[2]
+data_tot$description[3]
+data_tot$description[4]
+
+
+
+
+## MANEJO ESPACIAL ------------
+available_tags("leisure") %>% print(n = Inf) # stadium, park
+available_tags("amenity") %>% print(n = Inf) 
+# bank, bus_station, college, hospital, police, university, pub
+
+available_features() %>% head(100)
+
