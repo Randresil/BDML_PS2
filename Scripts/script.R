@@ -115,7 +115,73 @@ data_tot <- data_tot %>%
   mutate(piscina = as.numeric(grepl("piscina|jacuzzi|sauna|turco", data_tot$description)))
 data_tot %>% count(piscina)
 
+# Conjunto
+data_tot <- data_tot %>% 
+  mutate(conjunto = as.numeric(grepl("conjunto", data_tot$description)))
+data_tot %>% count(conjunto)
 
+# Apartaestudio
+data_tot <- data_tot %>% 
+  mutate(apartaestudio = as.numeric(grepl("apartaestudio", data_tot$description)))
+data_tot %>% count(apartaestudio)
+
+
+# Pisos
+data_tot <- data_tot %>% 
+  mutate(piso_info= str_extract(description, "(\\w+|\\d+) piso (\\w+|\\d+)"))
+
+numeros_escritos <- c("uno|primero|primer", "dos|segundo|segund", "tres|tercero|tercer", "cuatro|cuarto", "cinco|quinto", 
+                      "seis|sexto", "siete|septimo", "ocho|octavo", "nueve|noveno", "diez|decimo|dei", "once|onceavo")
+numeros_numericos <- as.character(1:11)
+
+data_tot <- data_tot %>% 
+  mutate(piso_info = str_replace_all(piso_info, setNames(numeros_numericos,numeros_escritos)))
+
+data_tot <- data_tot %>% 
+  mutate(piso_numerico = as.integer(str_extract(piso_info, "\\d+")))
+
+data_tot <- data_tot %>% 
+  mutate(piso_numerico = ifelse(piso_numerico > 20, NA, piso_numerico))
+
+data_tot <- data_tot %>% 
+  mutate(piso_numerico = replace_na(piso_numerico, 1))
+skim(data_tot$piso_numerico)
+
+
+# Baños
+data_tot <- data_tot %>% 
+  mutate(bano_info= str_extract(description, "(\\w+|\\d+) bano (\\w+|\\d+)"))
+
+data_tot <- data_tot %>% 
+  mutate(bano_numerico = as.integer(str_extract(bano_info, "\\d+")))
+
+data_tot <- data_tot %>% 
+  mutate(bano_numerico = ifelse(bano_numerico > 10, NA, bano_numerico))
+
+media <- round(mean(data_tot$bano_numerico, na.rm = TRUE))
+data_tot <- data_tot %>% 
+  mutate(bano_numerico = replace_na(bano_numerico, media))
+skim(data_tot$bano_numerico)
+
+
+# Baños
+data_tot <- data_tot %>% 
+  mutate(habitaciones_info= str_extract(description, "(\\w+|\\d+) (habitaciones|cuartos) (\\w+|\\d+)"))
+
+numeros_escritos <- c("uno|primero|primer", "dos|segundo|segund", "tres|tercero|tercer", "cuatro|cuarto", "cinco|quinto", 
+                      "seis|sexto", "siete|septimo", "ocho|octavo", "nueve|noveno", "diez|decimo|dei", "once|onceavo")
+numeros_numericos <- as.character(1:11)
+
+data_tot <- data_tot %>% 
+  mutate(habitaciones_numerico = as.integer(str_extract(habitaciones_info, "\\d+")))
+
+data_tot <- data_tot %>% 
+  mutate(habitaciones_numerico = ifelse(habitaciones_numerico > 11, NA, habitaciones_numerico))
+
+media <- round(mean(data_tot$habitaciones_numerico, na.rm = TRUE))
+data_tot <- data_tot %>% 
+  mutate(habitaciones_numerico = replace_na(habitaciones_numerico, media))
+skim(data_tot$habitaciones_numerico)
 
 
 
