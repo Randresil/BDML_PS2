@@ -74,18 +74,38 @@ leaflet() %>%
 # - piso
 # - parqueadero
 
+# Suma de NAs en las columnas
+apply(is.na(data_tot), MARGIN = 2, FUN = sum)
+skim(data_tot)
+glimpse(data_tot)
+
+
 data_tot$description[1]
 data_tot$description[2]
 data_tot$description[3]
 data_tot$description[4]
 
+# Todo en minuscula
+data_tot <- data_tot %>%
+  mutate(description = str_to_lower(description))
+# Eliminamos tildes
+data_tot <- data_tot %>%
+  mutate(description = iconv(description, from = "UTF-8", to = "ASCII//TRANSLIT"))
+# Eliminamos caracteres especiales
+data_tot <- data_tot %>%
+  mutate(description = str_replace_all(description, "[^[:alnum:]]", " "))
+# Eliminamos espacios extras
+data_tot <- data_tot %>%
+  mutate(description = str_trim(gsub("\\s+", " ", description)))
 
 
 
 ## MANEJO ESPACIAL ------------
+limites <- getbb("Bogota Colombia") # nos brinda la longitud y latitud en cuadrado de ciudad
+bogota <- opq(bbox = getbb("Bogotá Colombia")) # 
+
 available_tags("leisure") %>% print(n = Inf) # stadium, park
 available_tags("amenity") %>% print(n = Inf) 
 # bank, bus_station, college, hospital, police, university, pub
-
-available_features() %>% head(100)
+available_features() %>% head(Inf) 
 
