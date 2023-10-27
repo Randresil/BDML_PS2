@@ -163,6 +163,12 @@ data_tot <- data_tot %>%
   mutate(bano_numerico = replace_na(bano_numerico, media))
 skim(data_tot$bano_numerico)
 
+# Habitaciones predeterminadas por la base
+media <- round(mean(data_tot$bathrooms, na.rm = TRUE))
+data_tot <- data_tot %>% 
+  mutate(bathrooms = replace_na(bathrooms, media))
+skim(data_tot$bathrooms)
+
 
 # Baños
 data_tot <- data_tot %>% 
@@ -182,6 +188,21 @@ media <- round(mean(data_tot$habitaciones_numerico, na.rm = TRUE))
 data_tot <- data_tot %>% 
   mutate(habitaciones_numerico = replace_na(habitaciones_numerico, media))
 skim(data_tot$habitaciones_numerico)
+
+# Habitaciones predeterminadas por la base
+media <- round(mean(data_tot$rooms, na.rm = TRUE))
+data_tot <- data_tot %>% 
+  mutate(rooms = replace_na(rooms, media))
+skim(data_tot$rooms)
+
+
+
+# Metros cuadrados (m2, mt2, mts2)
+for (i in c(1:10)) {
+  print(data_tot$description[i])
+}
+
+grepl(c("m2 | mt2 | mts2"), data_tot$description)
 
 
 
