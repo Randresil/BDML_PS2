@@ -150,6 +150,10 @@ skim(data_tot$piso_numerico)
 
 # Baños
 data_tot <- data_tot %>% 
+  mutate(bano_number = str_count(description, "bano"))
+skim(data_tot$bano_number)
+
+data_tot <- data_tot %>% 
   mutate(bano_info= str_extract(description, "(\\w+|\\d+) bano (\\w+|\\d+)"))
 
 data_tot <- data_tot %>% 
@@ -170,7 +174,7 @@ data_tot <- data_tot %>%
 skim(data_tot$bathrooms)
 
 
-# Baños
+# Habitaciones
 data_tot <- data_tot %>% 
   mutate(habitaciones_info= str_extract(description, "(\\w+|\\d+) (habitaciones|cuartos) (\\w+|\\d+)"))
 
@@ -202,7 +206,20 @@ for (i in c(1:10)) {
   print(data_tot$description[i])
 }
 
-grepl(c("m2 | mt2 | mts2"), data_tot$description)
+sum(grepl(c("m2 | mt2 | mts2 | metros2 | metros cuadrados"), data_tot$description))
+
+data_tot <- data_tot %>% 
+  mutate(metros = case_when(
+    grepl("m2", data_tot$description) == TRUE ~ str_extract(description, "(\\w+|\\d+) m2"),
+    grepl("mt2", data_tot$description) == TRUE ~ str_extract(description, "(\\w+|\\d+) mt2"),
+    grepl("metros2", data_tot$description) == TRUE ~ str_extract(description, "(\\w+|\\d+) metros2"),
+    grepl("metros cuadrados", data_tot$description) == TRUE ~ str_extract(description, "(\\w+|\\d+) metros cuadrados"),
+    .default = NA ))
+
+data_tot <- data_tot %>% 
+  mutate(metros_num = as.integer(str_extract(metros, "\\d+")))
+skim(data_tot$metros_num)
+
 
 
 
