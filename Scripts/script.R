@@ -100,6 +100,25 @@ data_tot <- data_tot %>%
   mutate(description = str_trim(gsub("\\s+", " ", description)))
 
 
+# Parqueaderos
+data_tot <- data_tot %>%
+  mutate(parqueadero = as.numeric(grepl("parqueadero|garaje|estacionamiento|parqueo", data_tot$description)))
+data_tot %>% count(parqueadero)
+
+# Terraza
+data_tot <- data_tot %>%
+  mutate(terraza = as.numeric(grepl("jardin|terraza|azotea|balcon", data_tot$description)))
+data_tot %>% count(terraza)
+
+# Piscina
+data_tot <- data_tot %>% 
+  mutate(piscina = as.numeric(grepl("piscina|jacuzzi|sauna|turco", data_tot$description)))
+data_tot %>% count(piscina)
+
+
+
+
+
 
 ## MANEJO ESPACIAL ------------
 limites <- getbb("Bogota Colombia") # nos brinda la longitud y latitud en cuadrado de ciudad
@@ -109,8 +128,6 @@ available_tags("leisure") %>% print(n = Inf) # stadium, park, nature_reserve
 available_tags("amenity") %>% print(n = Inf) # bank, bus_station, college, hospital, police, university, pub, veterinary
 available_tags("tourism") %>% print(n = Inf) # museum
 available_tags("shop") %>% print(n = Inf) # mall
-
-
 
 available_features() %>% head(Inf) 
 
@@ -241,4 +258,6 @@ for (i in c("nature_reserve")) {
   # Añadir variable a base de datos
   data_tot <- data_tot %>% mutate(!!i := st_distance(x = data_tot_sf, y = centroides_B_sf[nearest_B,], by_element=TRUE))
 }
+
+
 
