@@ -365,3 +365,20 @@ for (i in c("nature_reserve")) {
 
 
 
+
+## DATAFRAMES OF TRAIN AND TEST AFTER MANIPULATION ------------------
+data <- data_tot %>% filter(div == "train")
+data2 <- data_tot %>% filter(div == "test")
+
+
+# Variables de interes para nuestro modelaje
+# Y = price
+
+# X basicos = rooms, bedrooms, bathrooms, property_type 
+# X construidos espacial = bank, bus_station, college, hospital, police, university
+#                          pub, veterinary, mall, nature_reserve, parqueadero, terraza
+#                          piscina, conjunto, apartaestudio
+
+# X construidos description = piso_numerico, bano_numerico, habitaciones_numerico, bano_number, metros_num
+
+
