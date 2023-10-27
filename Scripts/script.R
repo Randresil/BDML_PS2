@@ -147,3 +147,29 @@ data_tot <- data_tot %>% mutate(distancia_park = st_distance(x = data_tot_sf, y 
                                 distancia_stadium = st_distance(x = data_tot_sf, y = centroides_stadium_sf[nearest_stadium,], by_element=TRUE))
 
 
+for (i in c("bank", "bus_station", "college", "hospital", "police", "university", "pub")) {
+  print(i)
+  
+  # Extraccion de informacion
+  A <- paste0("var", i)
+  A <- bogota %>%
+    add_osm_feature(key = "amenity" , value = i) 
+  
+  # Formato sf
+  A <- osmdata_sf(A)
+  
+  # Seleccion de poligonos y centroides
+  B <- A$osm_polygons %>% 
+    select(osm_id, name)
+  
+  centroides_B <- gCentroid(as(B$geometry, "Spatial"), byid = T)
+  
+  
+  # Centroides y mas cercano
+  centroides_B_sf <- st_as_sf(centroides_B, coords = c("lon", "lat"), crs=4326)
+  nearest_B <- st_nearest_feature(data_tot_sf,centroides_B_sf)
+  
+  # Añadir variable a base de datos
+  data_tot <- data_tot %>% mutate(paste0("distancia_", i) = st_distance(x = data_tot_sf, y = centroides_B_sf[nearest_B,], by_element=TRUE))
+}
+
