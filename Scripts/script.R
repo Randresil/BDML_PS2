@@ -14,7 +14,8 @@ p_load(tidyverse,  # Manipulacio de dataframes
        leaflet,    # Mapas interactivos
        tidymodels, # Para modelos de ML
        rio,        # Importacion
-       stargazer,
+       stargazer,  # Tablas bonitas de regs y estad desc
+       rgeos, # Calcular centroides de un poligono
        skimr,
        glmnet)
 
@@ -108,4 +109,41 @@ available_tags("leisure") %>% print(n = Inf) # stadium, park
 available_tags("amenity") %>% print(n = Inf) 
 # bank, bus_station, college, hospital, police, university, pub
 available_features() %>% head(Inf) 
+
+
+# Extraemos la info de todos los parques
+park <- bogota %>%
+  add_osm_feature(key = "leisure" , value = "park") 
+
+stadium <- bogota %>% 
+  add_osm_feature(key = "leisure", value = "stadium")
+
+# Cambiamos el formato para que sea un objeto sf (simple features)
+park_sf <- osmdata_sf(park)
+stadium_sf <- osmdata_sf(stadium)
+
+
+# Seleccion de poligonos de las variables de leisure
+# y sus respectivos centroides 
+park_geometria <- park_sf$osm_polygons %>% 
+  select(osm_id, name)
+centroides_park <- gCentroid(as(park_geometria$geometry, "Spatial"), byid = T)
+
+stadium_geometria <- stadium_sf$osm_polygons %>% 
+  select(osm_id, name)
+centroides_stadium <- gCentroid(as(stadium_geometria$geometry, "Spatial"), byid = T)
+
+
+# Transformacion de nuestros datos al tipo de simple features sf
+data_tot_sf <- st_as_sf(data_tot, coords = c("lon", "lat"), crs=4326)
+
+centroides_park_sf <- st_as_sf(centroides_park, coords = c("lon", "lat"), crs=4326)
+centroides_stadium_sf <- st_as_sf(centroides_stadium, coords = c("lon", "lat"), crs=4326)
+
+nearest_park <- st_nearest_feature(data_tot_sf,centroides_park_sf)
+nearest_stadium <- st_nearest_feature(data_tot_sf,centroides_stadium_sf)
+
+data_tot <- data_tot %>% mutate(distancia_park = st_distance(x = data_tot_sf, y = centroides_park_sf[nearest_park,], by_element=TRUE),
+                                distancia_stadium = st_distance(x = data_tot_sf, y = centroides_stadium_sf[nearest_stadium,], by_element=TRUE))
+
 
