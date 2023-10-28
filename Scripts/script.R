@@ -231,7 +231,7 @@ for (i in c("vista", "duplex", "penthouse")){
   cat(paste("Total de:", a+b),"\n")
 }
 
-# Duplex
+# Duplex, penthouse, vista
 data_tot <- data_tot %>% 
   mutate(duplex = as.numeric(grepl("duplex", data_tot$description)) + as.numeric(grepl("duplex", data_tot$title)))
 data_tot %>% count(duplex)
@@ -247,6 +247,15 @@ data_tot <- data_tot %>%
 data_tot %>% count(penthouse)
 data_tot$penthouse[data_tot$penthouse == 2] <- 1
 
+# Dummy de casa
+data_tot <- data_tot %>% 
+  mutate(casa = ifelse(data_tot$property_type == "Casa", 1, 0),
+         casa_title = as.numeric(grepl("casa", data_tot$title)))
+data_tot %>% count(casa)
+data_tot %>% count(casa_title)
+data_tot <- data_tot %>% select(-casa_title)
+data_tot <- data_tot %>%
+  mutate(casa = as.factor(casa))
 
 
 ## MANEJO ESPACIAL ------------
@@ -392,10 +401,6 @@ for (i in c("nature_reserve")) {
 
 
 ## DATAFRAMES OF TRAIN AND TEST AFTER MANIPULATION ------------------
-data <- data_tot %>% filter(div == "train")
-data2 <- data_tot %>% filter(div == "test")
-
-
 # Variables de interes para nuestro modelaje
 # Y = price
 
@@ -403,7 +408,28 @@ data2 <- data_tot %>% filter(div == "test")
 # X construidos espacial = bank, bus_station, college, hospital, police, university
 #                          pub, veterinary, mall, nature_reserve, 
 
-# X DUMMIES:               parqueadero, terraza, piscina, conjunto, apartaestudio
+# X DUMMIES:               parqueadero, terraza, piscina, conjunto, apartaestudio, duplex, vista, penthouse
 # X construidos description = piso_numerico, bano_numerico, habitaciones_numerico, bano_number, metros_num
 
-dummies <- c()
+dummies <- c("parqueadero", "terraza", "piscina", "conjunto", "apartaestudio",
+             "duplex", "vista", "penthouse")
+data_tot <- data_tot %>%  mutate_at(dummies, as.factor)
+
+
+data <- data_tot %>% filter(div == "train")
+data2 <- data_tot %>% filter(div == "test")
+
+
+fitControl <- trainControl(method ="cv", number=5)
+tree_lenght_geo <- train(
+  price ~ bedrooms + bathrooms + terraza + bus_station + police + casa ,
+  data=data,
+  method = "rpart",
+  metric="MAE",
+  trControl = fitControl,
+  tuneLength=100
+)
+tree_lenght_geo
+prp(tree_lenght_geo$finalModel, under = TRUE, branch.lty = 2, yesno = 2, faclen = 0, varlen=15,tweak=1.2,clip.facs= TRUE,box.palette = "Blues")
+cp_geo <- predict(tree_lenght_geo, data2)
+cp_geo
