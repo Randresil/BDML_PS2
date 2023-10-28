@@ -222,6 +222,31 @@ skim(data_tot$metros_num)
 
 
 
+## VARIABLES EXTRA DE TITLE Y DESCRIPTION
+# duplex, penthouse, vista
+for (i in c("vista", "duplex", "penthouse")){
+  a <- sum(grepl(i, data_tot$title))
+  b <- sum(grepl(i, data_tot$description))
+  cat(paste("Para", i, "En el titulo se tiene:", a, "Y en descripción:", b, "\n"))
+  cat(paste("Total de:", a+b),"\n")
+}
+
+# Duplex
+data_tot <- data_tot %>% 
+  mutate(duplex = as.numeric(grepl("duplex", data_tot$description)) + as.numeric(grepl("duplex", data_tot$title)))
+data_tot %>% count(duplex)
+data_tot$duplex[data_tot$duplex == 2] <- 1
+
+data_tot <- data_tot %>% 
+  mutate(vista = as.numeric(grepl("vista", data_tot$description)) + as.numeric(grepl("vista", data_tot$title)))
+data_tot %>% count(vista)
+data_tot$vista[data_tot$vista == 2] <- 1
+
+data_tot <- data_tot %>% 
+  mutate(penthouse = as.numeric(grepl("penthouse", data_tot$description)) + as.numeric(grepl("penthouse", data_tot$title)))
+data_tot %>% count(penthouse)
+data_tot$penthouse[data_tot$penthouse == 2] <- 1
+
 
 
 ## MANEJO ESPACIAL ------------
@@ -376,9 +401,9 @@ data2 <- data_tot %>% filter(div == "test")
 
 # X basicos = rooms, bedrooms, bathrooms, property_type 
 # X construidos espacial = bank, bus_station, college, hospital, police, university
-#                          pub, veterinary, mall, nature_reserve, parqueadero, terraza
-#                          piscina, conjunto, apartaestudio
+#                          pub, veterinary, mall, nature_reserve, 
 
+# X DUMMIES:               parqueadero, terraza, piscina, conjunto, apartaestudio
 # X construidos description = piso_numerico, bano_numerico, habitaciones_numerico, bano_number, metros_num
 
-
+dummies <- c()

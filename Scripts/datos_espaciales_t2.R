@@ -686,3 +686,6 @@ prediccion_boost_expand
 write.csv(test %>% select(property_id) %>% bind_cols(prediccion_boost_expand),file = 'prediccion_boost_expand.csv')
 
 ##_____________________ OTROOOOO________
+
+
+
