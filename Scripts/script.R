@@ -429,6 +429,8 @@ data_tot <- data_tot %>%  mutate_at(dummies, as.factor)
 
 # Guardar la base de datos para no repetir todo el proceso anterior
 write.csv(data_tot, file = "Stores/Data_total.csv")
+data_tot <- import("Stores/Data_total.csv")
+
 
 
 ## Trabajo de la base para valores en NA
@@ -532,4 +534,50 @@ prediccion_lasso
 prediccion_lasso <- test %>% select(property_id) %>% bind_cols(prediccion_lasso) %>% rename(price = .pred, property_id = property_id)
 write.csv(prediccion_lasso, file = 'Stores/prediccion_lasso.csv', row.names = FALSE)
 
+
+
+
+
+elastic_recipe <- 
+  recipe(formula = price ~ distancia_park + distancia_stadium + bank + bus_station + college + hospital +
+           police + university + pub + veterinary + mall + nature_reserve + parqueadero + terraza + piscina +
+           conjunto + apartaestudio + duplex + vista + penthouse + casa + habitaciones_numerico + bano_numerico +
+           metros_num, data = train) %>% 
+  step_normalize(all_predictors()) %>% 
+  step_poly(metros_num, mall, degree = 2) %>%
+  step_novel(all_nominal_predictors()) %>% 
+  step_dummy(all_nominal_predictors()) 
+
+elastic_spec <- linear_reg(penalty = tune(), mixture = tune()) %>%
+  set_mode("regression") %>%
+  set_engine("glmnet")
+
+elastic_workflow <- workflow() %>%
+  add_recipe(elastic_recipe) %>%
+  add_model(elastic_spec)
+
+penalty_grid <- grid_regular(penalty(range = c(-4, 200)), levels = 300)
+penalty_grid
+
+tune_res <- tune_grid(
+  elastic_workflow,             # El flujo de trabajo que contiene: receta y especificación del modelo
+  resamples = df_fold,        # Folds de validación cruzada
+  grid = penalty_grid,        # Grilla de valores de penalización
+  metrics = metric_set(mae))
+tune_res
+
+autoplot(tune_res)
+collect_metrics(tune_res)
+
+best_penalty <- select_best(tune_res, metric = "mae")
+best_penalty
+
+elastic_final <- finalize_workflow(elastic_workflow, best_penalty)
+elastic_final_fit <- fit(elastic_final, data = train)
+
+prediccion_elastic <- predict(elastic_final_fit, new_data = test)
+prediccion_elastic
+
+prediccion_elastic <- test %>% select(property_id) %>% bind_cols(prediccion_elastic) %>% rename(price = .pred, property_id = property_id)
+write.csv(prediccion_elastic, file = 'Stores/prediccion_elastic.csv', row.names = FALSE)
 
