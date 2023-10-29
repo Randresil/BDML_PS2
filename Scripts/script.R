@@ -433,3 +433,56 @@ tree_lenght_geo
 prp(tree_lenght_geo$finalModel, under = TRUE, branch.lty = 2, yesno = 2, faclen = 0, varlen=15,tweak=1.2,clip.facs= TRUE,box.palette = "Blues")
 cp_geo <- predict(tree_lenght_geo, data2)
 cp_geo
+
+
+##ESTADISTICAS DESCRIPTIVAS
+
+data$log_price <- log(data$price)
+
+
+
+# Crea un diagrama de caja y bigotes diferenciado por la variable dummy 'parqueadero'
+boxplot(log_price ~ parqueadero, data = data, 
+        xlab = "Parqueadero (1 = Sí, 0 = No)", 
+        ylab = "Precio de Vivienda (LOG)",
+        main = " Caja y Bigotes de Precio  por Parqueadero")
+
+# Crea un diagrama de caja y bigotes diferenciado por la variable dummy 'parqueadero'
+boxplot(log_price ~ terraza, data = data, 
+        xlab = "terraza (1 = Sí, 0 = No)", 
+        ylab = "Precio de Vivienda (Logaritmo)",
+        main = " Caja y Bigotes de Precio  por terraza")
+
+# Crea un diagrama de caja y bigotes diferenciado por la variable dummy 'parqueadero'
+boxplot(log_price ~ casa, data = data, 
+        xlab = "casa (1 = Sí, 0 = No)", 
+        ylab = "Precio de Vivienda (Logaritmo)",
+        main = " Caja y Bigotes de Precio  por casa")
+
+# Crea un diagrama de caja y bigotes diferenciado por la variable dummy 'parqueadero'
+boxplot(log_price ~ piscina, data = data, 
+        xlab = "casa (1 = Sí, 0 = No)", 
+        ylab = "Precio de Vivienda (Logaritmo)",
+        main = " Caja y Bigotes de Precio  por pisicna")
+
+install.packages("plotly")
+library(plotly)
+library(units)
+
+p1 <- ggplot(data%>%sample_n(1000), aes(x = pub, y = price)) +
+  geom_point(col = "darkblue", alpha = 0.4) +
+  geom_smooth() +
+  labs(x = "Distancia mínima a un bar en metros (metros)", 
+       y = "Valor de inmueble ",
+       title = "Relación entre la proximidad a un bar y el precio") +
+  theme_bw()
+ggplotly(p1)
+
+p2 <- ggplot(data%>%sample_n(1000), aes(x = distancia_park, y = price)) +
+  geom_point(col = "darkblue", alpha = 0.4) +
+  geom_smooth() +
+  labs(x = "Distancia mínima a un parque en metros (metros)", 
+       y = "Valor de inmueble ",
+       title = "Relación entre la proximidad a un parque y el precio") +
+  theme_bw()
+ggplotly(p2)
