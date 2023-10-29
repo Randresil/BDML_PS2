@@ -206,20 +206,28 @@ for (i in c(1:10)) {
   print(data_tot$description[i])
 }
 
-sum(grepl(c("m2 | mt2 | mts2 | metros2 | metros cuadrados"), data_tot$description))
+sum(grepl(c("m2 | mt2 | mts2 | metros2 | metros cuadrados | mts"), data_tot$description))
 
 data_tot <- data_tot %>% 
   mutate(metros = case_when(
     grepl("m2", data_tot$description) == TRUE ~ str_extract(description, "(\\w+|\\d+) m2"),
     grepl("mt2", data_tot$description) == TRUE ~ str_extract(description, "(\\w+|\\d+) mt2"),
+    grepl("mts2", data_tot$description) == TRUE ~ str_extract(description, "(\\w+|\\d+) mts2"),
     grepl("metros2", data_tot$description) == TRUE ~ str_extract(description, "(\\w+|\\d+) metros2"),
     grepl("metros cuadrados", data_tot$description) == TRUE ~ str_extract(description, "(\\w+|\\d+) metros cuadrados"),
+    grepl("mts", data_tot$description) == TRUE ~ str_extract(description, "(\\w+|\\d+) mts"),
     .default = NA ))
 
 data_tot <- data_tot %>% 
   mutate(metros_num = as.integer(str_extract(metros, "\\d+")))
 skim(data_tot$metros_num)
 
+quantile(data_tot$metros_num, probs = c(0, 0.25, 0.5, 0.75, 0.8, 0.85, 0.9, 0.95, 0.99, 1), na.rm = TRUE)
+data_tot$metros_num[data_tot$metros_num > 300] <- NA
+quantile(data_tot$metros_num, probs = c(0, 0.1, 0.15, 0.25, 0.5, 0.75, 0.8, 0.85, 0.9, 0.95, 0.99, 1), na.rm = TRUE)
+skim(data_tot$metros_num)
+mediana_metros <- median(data_tot$metros_num, na.rm = TRUE)
+data_tot$metros_num[is.na(data_tot$metros_num)] <- mediana_metros
 
 
 ## VARIABLES EXTRA DE TITLE Y DESCRIPTION
@@ -400,6 +408,7 @@ for (i in c("nature_reserve")) {
 
 
 
+
 ## DATAFRAMES OF TRAIN AND TEST AFTER MANIPULATION ------------------
 # Variables de interes para nuestro modelaje
 # Y = price
@@ -416,20 +425,111 @@ dummies <- c("parqueadero", "terraza", "piscina", "conjunto", "apartaestudio",
 data_tot <- data_tot %>%  mutate_at(dummies, as.factor)
 
 
-data <- data_tot %>% filter(div == "train")
-data2 <- data_tot %>% filter(div == "test")
 
 
-fitControl <- trainControl(method ="cv", number=5)
-tree_lenght_geo <- train(
-  price ~ bedrooms + bathrooms + terraza + bus_station + police + casa ,
-  data=data,
-  method = "rpart",
-  metric="MAE",
-  trControl = fitControl,
-  tuneLength=100
-)
-tree_lenght_geo
-prp(tree_lenght_geo$finalModel, under = TRUE, branch.lty = 2, yesno = 2, faclen = 0, varlen=15,tweak=1.2,clip.facs= TRUE,box.palette = "Blues")
-cp_geo <- predict(tree_lenght_geo, data2)
-cp_geo
+# Guardar la base de datos para no repetir todo el proceso anterior
+write.csv(data_tot, file = "Stores/Data_total.csv")
+
+
+## Trabajo de la base para valores en NA
+skim(data_tot)
+data_met <- data_tot %>% filter(is.na(metros_num))
+
+for (i in c(1:30)) {
+  print(data_met$description[i])
+}
+
+
+
+
+
+train <- data_tot %>% filter(div == "train")
+test <- data_tot %>% filter(div == "test")
+
+str(train$distancia_park)
+
+df_fold <- vfold_cv(train, v = 5)
+
+ridge_recipe <- 
+  recipe(formula = price ~ distancia_park + distancia_stadium + bank + bus_station + college + hospital +
+          police + university + pub + veterinary + mall + nature_reserve + parqueadero + terraza + piscina +
+           conjunto + apartaestudio + duplex + vista + penthouse + casa + habitaciones_numerico + bano_numerico, data = train) %>% 
+  step_novel(all_nominal_predictors()) %>% 
+  step_dummy(all_nominal_predictors()) 
+
+ridge_spec <- linear_reg(penalty = tune(), mixture = 0) %>%
+  set_mode("regression") %>%
+  set_engine("glmnet")
+  
+ridge_workflow <- workflow() %>%
+  add_recipe(ridge_recipe) %>%
+  add_model(ridge_spec)
+
+penalty_grid <- grid_regular(penalty(range = c(0, 200)), levels = 5000)
+penalty_grid
+
+tune_res <- tune_grid(
+  ridge_workflow,             # El flujo de trabajo que contiene: receta y especificación del modelo
+  resamples = df_fold,        # Folds de validación cruzada
+  grid = penalty_grid,        # Grilla de valores de penalización
+  metrics = metric_set(mae))
+tune_res
+
+autoplot(tune_res)
+collect_metrics(tune_res)
+
+best_penalty <- select_best(tune_res, metric = "mae")
+best_penalty
+
+ridge_final <- finalize_workflow(ridge_workflow, best_penalty)
+ridge_final_fit <- fit(ridge_final, data = train)
+
+prediccion_ridge <- predict(ridge_final_fit, new_data = test)
+prediccion_ridge
+
+prediccion_ridge <- test %>% select(property_id) %>% bind_cols(prediccion_ridge) %>% rename(price = .pred, property_id = property_id)
+write.csv(prediccion_ridge, file = 'Stores/prediccion_ridge.csv', row.names = FALSE)
+
+
+
+lasso_recipe <- 
+  recipe(formula = price ~ distancia_park + distancia_stadium + bank + bus_station + college + hospital +
+           police + university + pub + veterinary + mall + nature_reserve + parqueadero + terraza + piscina +
+           conjunto + apartaestudio + duplex + vista + penthouse + casa + habitaciones_numerico + bano_numerico, data = train) %>% 
+  step_novel(all_nominal_predictors()) %>% 
+  step_dummy(all_nominal_predictors()) 
+
+lasso_spec <- linear_reg(penalty = tune(), mixture = 1) %>%
+  set_mode("regression") %>%
+  set_engine("glmnet")
+
+lasso_workflow <- workflow() %>%
+  add_recipe(lasso_recipe) %>%
+  add_model(lasso_spec)
+
+penalty_grid <- grid_regular(penalty(range = c(-4, 200)), levels = 300)
+penalty_grid
+
+tune_res <- tune_grid(
+  lasso_workflow,             # El flujo de trabajo que contiene: receta y especificación del modelo
+  resamples = df_fold,        # Folds de validación cruzada
+  grid = penalty_grid,        # Grilla de valores de penalización
+  metrics = metric_set(mae))
+tune_res
+
+autoplot(tune_res)
+collect_metrics(tune_res)
+
+best_penalty <- select_best(tune_res, metric = "mae")
+best_penalty
+
+lasso_final <- finalize_workflow(lasso_workflow, best_penalty)
+lasso_final_fit <- fit(lasso_final, data = train)
+
+prediccion_lasso <- predict(lasso_final_fit, new_data = test)
+prediccion_lasso
+
+prediccion_lasso <- test %>% select(property_id) %>% bind_cols(prediccion_lasso) %>% rename(price = .pred, property_id = property_id)
+write.csv(prediccion_lasso, file = 'Stores/prediccion_lasso.csv', row.names = FALSE)
+
+
