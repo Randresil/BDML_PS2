@@ -603,6 +603,54 @@ cp_geo <- predict(tree_lenght_geo, data2)
 cp_geo
 
 
+p_load("caret")
+
+fitControl <- trainControl(method ="cv", number=5)
+fitControl
+
+tree_ranger_grid <- train(price ~ bedrooms  +bathrooms + terraza + conjunto + apartaestudio + piso_numerico +
+                            bus_station + police + college + mall + bank + casa,
+                          data=data,
+                          method = "ranger",
+                          trControl = fitControl,
+                          tuneGrid=expand.grid(
+                            mtry = c(1,2,3),
+                            splitrule = "variance",
+                            min.node.size = c(5,10,15))
+)
+
+tree_ranger_grid
+p_load(rpart.plot)
+prp(tree_ranger_grid$finalModel, under = TRUE, branch.lty = 2, yesno = 2, faclen = 0, varlen=15,tweak=1.2,clip.facs= TRUE,box.palette = "Blues")
+cp_geo <- predict(tree_ranger_grid , data2)
+cp_geo
+
+write.csv(data2 %>% select(property_id) %>% bind_cols(cp_geo),file = 'rm_ranger_all.csv')
+
+tree_ranger_grid
+
+
+##________________
+
+
+p_load("bst")
+
+tree_boosted <- train(price ~bathrooms  +habitaciones_numerico + terraza + conjunto + apartaestudio + piso_numerico +
+                        bus_station + police + college + mall + bank + casa + hospital,
+                      data=data,
+                      method = "bstTree",
+                      trControl = fitControl,
+                      tuneGrid=expand.grid(
+                        mstop = c(300,400,500), #Boosting Iterations (M)
+                        maxdepth = c(1,2,3), # Max Tree Depth (d)
+                        nu = c(0.01,0.001)) # Shrinkage (lambda)
+)
+
+tree_boosted
+boost <- predict(tree_boosted,data2)
+boost
+write.csv(data2 %>% select(property_id) %>% bind_cols(boost),file = 'tree_boosted.csv')
+
 
 
 # RANDOM FOREST
