@@ -449,6 +449,7 @@ for (i in c(1:30)) {
 
 
 
+## MODELAJE ----------------------
 train <- data_tot %>% filter(div == "train")
 test <- data_tot %>% filter(div == "test")
 
@@ -750,10 +751,43 @@ write.csv(prediccion_rf, file = 'Stores/prediccion_rf2.csv', row.names = FALSE)
 
 
 
-##ESTADISTICAS DESCRIPTIVAS
+## ESTADISTICAS DESCRIPTIVAS y GRAFICOS -------------------
+glimpse(data_tot)
+data_tot2 <- data_tot %>% select(-c(V1, piso_info, bano_info, habitaciones_info, metros, bano_number))
+names(data_tot2)
+
+stargazer(data_tot2, type = "text")
+
+stargazer(data_tot2, 
+          title = "Estadísticas Descriptivas", 
+          type = "text",
+          digits = 1,
+          covariate.labels = c("Price", "Month", "Year", "Surface Total", "Surface Covered",
+                               "Rooms", "Bedrooms", "Bathrooms", "Latitude", "Longitude",
+                               "Parqueadero", "Terraza", "Piscina", "Conjunto", "Apartaestudio",
+                               "Número Piso", "Cantidad Baños", "Cantidad Cuartos", "Metros", 
+                               "Duplex", "Vista", "Penthouse", "Casa", "Distancia Parque", 
+                               "Distancia Estadio", "Distancia Banco", "Distancia Bus", "Distancia College",
+                               "Distancia Hospital", "Distancia Policía", "Distancia Universidad",
+                               "Distancia Pub", "Distancia Veterinaria", "Distancia Mall", "Distancia Reserva"),
+          out = "Stores/Estad_desc.txt")
+
+stargazer(data_tot2, 
+          title = "Estadísticas Descriptivas", 
+          type = "html",
+          digits = 1,
+          covariate.labels = c("Price", "Month", "Year", "Surface Total", "Surface Covered",
+                               "Rooms", "Bedrooms", "Bathrooms", "Latitude", "Longitude",
+                               "Parqueadero", "Terraza", "Piscina", "Conjunto", "Apartaestudio",
+                               "Número Piso", "Cantidad Baños", "Cantidad Cuartos", "Metros", 
+                               "Duplex", "Vista", "Penthouse", "Casa", "Distancia Parque", 
+                               "Distancia Estadio", "Distancia Banco", "Distancia Bus", "Distancia College",
+                               "Distancia Hospital", "Distancia Policía", "Distancia Universidad",
+                               "Distancia Pub", "Distancia Veterinaria", "Distancia Mall", "Distancia Reserva"),
+          out = "Stores/Estad_desc.htm")
+
+
 data$log_price <- log(data$price)
-
-
 
 # Crea un diagrama de caja y bigotes diferenciado por la variable dummy 'parqueadero'
 boxplot(log_price ~ parqueadero, data = data, 
