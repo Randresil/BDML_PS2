@@ -1,10 +1,9 @@
 
 #  Problem Set 2
-##'ELaborado por: Ricardo Silva, Fedrico Camacho, Andrés Chavarro & Juan David
-  Vélez P.'
-###date: "2023-10-30"
+## ELaborado por: Ricardo Silva, Fedrico Camacho, Andrés Chavarro & Juan David Vélez P.
+### "2023-10-30"
 
-subtitle: Predicting Pirces
+## Predicting Pirces
 
 
 ## Datos empleados
