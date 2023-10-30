@@ -623,8 +623,6 @@ recipe <- recipe(formula = price ~ distancia_park + distancia_stadium + bank + b
 rf_grid_random <- grid_random(  mtry(range = c(2, 10)),
                                 min_n(range = c(2, 12)),
                                 trees(range = c(100, 150)), size = 4)
-# Agregar modelos basados en árboles
-# Random Forest
 
 ## Modelo de rf
 rf_spec<- rand_forest(
@@ -657,6 +655,99 @@ prediccion_rf
 
 prediccion_rf <- test %>% select(property_id) %>% bind_cols(prediccion_rf) %>% rename(price = .pred, property_id = property_id)
 write.csv(prediccion_rf, file = 'Stores/prediccion_rf.csv', row.names = FALSE)
+
+
+
+# Modelo Arbol Boosting
+# Tune grid aleatorio para el modelo de boost
+tune_grid_boost <- grid_random(
+  trees(range = c(400, 600)),
+  min_n(range = c(1, 12)),
+  learn_rate(range = c(0.001, 0.01)), size = 4
+)
+
+# Especificación del modelo boost_tree en tidymodels
+boost_spec <- boost_tree(
+  trees = tune(),
+  min_n = tune(),
+  learn_rate = tune()
+) %>%
+  set_mode("regression")
+
+workflow_boost <- workflow() %>%
+  add_recipe(recipe) %>%
+  add_model(boost_spec)
+
+tune_boost <- tune_grid(
+  workflow_boost,
+  resamples = block_folds, 
+  grid = tune_grid_boost,
+  metrics = metric_set(mae)
+)
+
+best_parms_boost <- select_best(tune_boost, metric = "mae")
+best_parms_boost
+
+boost_final <- finalize_workflow(workflow_boost, best_parms_boost)
+
+boost_final_fit <- fit(boost_final, data = train)
+
+prediccion_boost <- predict(boost_final_fit, new_data = test)
+prediccion_boost
+
+prediccion_boost <- test %>% select(property_id) %>% bind_cols(prediccion_boost) %>% rename(price = .pred, property_id = property_id)
+write.csv(prediccion_boost, file = 'Stores/prediccion_boost.csv', row.names = FALSE)
+
+
+# RANDOM FOREST 2
+recipe <- recipe(formula = price ~ distancia_park + distancia_stadium + bank + bus_station + college + hospital +
+                   police + university + pub + veterinary + mall + nature_reserve + parqueadero + terraza + piscina +
+                   conjunto + apartaestudio + duplex + vista + penthouse + casa + habitaciones_numerico + bano_numerico +
+                   metros_num, data = train) %>%
+  # step_poly(metros_num = 2)
+  step_novel(all_nominal_predictors()) %>% 
+  step_dummy(all_nominal_predictors()) %>% 
+  step_zv(all_predictors()) 
+
+# Tune grid aleatorio para el modelo de rf
+rf_grid_random <- grid_random(  mtry(range = c(6, 14)),
+                                min_n(range = c(4, 14)),
+                                trees(range = c(100, 120)), size = 4)
+
+## Modelo de rf
+rf_spec<- rand_forest(
+  mtry = tune(),              # Hiperparámetro: Número de variables a considerar en cada división
+  min_n = tune(),             # Hiperparámetro: Profundidad mínima del árbol
+  trees = tune(),
+) %>%
+  set_engine("randomForest") %>%
+  set_mode("regression")       # Cambiar a modo de regresión
+
+workflow_rf <- workflow() %>%
+  add_recipe(recipe) %>%
+  add_model(rf_spec)
+
+tune_rf <- tune_grid(
+  workflow_rf,
+  resamples = block_folds, 
+  grid = rf_grid_random,
+  metrics = metric_set(mae))
+
+best_parms_rf<- select_best(tune_rf, metric = "mae")
+best_parms_rf
+
+rf_final <- finalize_workflow(workflow_rf, best_parms_rf)
+
+rf_final_fit <- fit(rf_final, data = train)
+
+prediccion_rf <- predict(rf_final_fit, new_data = test)
+prediccion_rf
+
+prediccion_rf <- test %>% select(property_id) %>% bind_cols(prediccion_rf) %>% rename(price = .pred, property_id = property_id)
+write.csv(prediccion_rf, file = 'Stores/prediccion_rf2.csv', row.names = FALSE)
+
+
+
 
 
 ##ESTADISTICAS DESCRIPTIVAS
