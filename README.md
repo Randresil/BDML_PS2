@@ -1,11 +1,11 @@
----
+
 title: "Readme Problem Set 2"
 author: 'ELaborado por: Ricardo Silva, Fedrico Camacho, Andrés Chavarro & Juan David
   Vélez P.'
 date: "2023-10-30"
 output: html_document
 subtitle: Predicting Pirces
----
+
 
 ## Datos empleados
 
