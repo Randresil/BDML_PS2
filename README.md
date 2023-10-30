@@ -1,5 +1,5 @@
 
-#  **Problem Set 2**
+#  <center>**Problem Set 2**</center>
 ## ELaborado por: Ricardo Silva, Fedrico Camacho, Andrés Chavarro & Juan David Vélez P.
 ### "2023-10-30"
 
