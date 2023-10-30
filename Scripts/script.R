@@ -17,7 +17,10 @@ p_load(tidyverse,  # Manipulacio de dataframes
        stargazer,  # Tablas bonitas de regs y estad desc
        rgeos, # Calcular centroides de un poligono
        skimr,
-       glmnet)
+       glmnet,
+       randomForest, # Modelos de bosque aleatorio
+       rattle, # Interfaz gráfica para el modelado de datos
+       spatialsample) # Muestreo espacial para modelos de aprendizaje automático)
 
 
 getwd()
@@ -427,6 +430,7 @@ data_tot <- data_tot %>%  mutate_at(dummies, as.factor)
 
 
 
+
 # Guardar la base de datos para no repetir todo el proceso anterior
 write.csv(data_tot, file = "Stores/Data_total.csv")
 data_tot <- import("Stores/Data_total.csv")
@@ -580,4 +584,129 @@ prediccion_elastic
 
 prediccion_elastic <- test %>% select(property_id) %>% bind_cols(prediccion_elastic) %>% rename(price = .pred, property_id = property_id)
 write.csv(prediccion_elastic, file = 'Stores/prediccion_elastic.csv', row.names = FALSE)
+
+
+
+fitControl <- trainControl(method ="cv", number=5)
+tree_lenght_geo <- train(
+  price ~ bedrooms + bathrooms + terraza + bus_station + police + casa ,
+  data=data,
+  method = "rpart",
+  metric="MAE",
+  trControl = fitControl,
+  tuneLength=100
+)
+tree_lenght_geo
+prp(tree_lenght_geo$finalModel, under = TRUE, branch.lty = 2, yesno = 2, faclen = 0, varlen=15,tweak=1.2,clip.facs= TRUE,box.palette = "Blues")
+cp_geo <- predict(tree_lenght_geo, data2)
+cp_geo
+
+
+
+
+# RANDOM FOREST
+train_sf <- st_as_sf(train, coords = c("lon", "lat"), crs=4326)
+
+set.seed(123)
+block_folds <- spatial_block_cv(train_sf, v = 5)
+autoplot(block_folds)
+
+recipe <- recipe(formula = price ~ distancia_park + distancia_stadium + bank + bus_station + college + hospital +
+                   police + university + pub + veterinary + mall + nature_reserve + parqueadero + terraza + piscina +
+                   conjunto + apartaestudio + duplex + vista + penthouse + casa + habitaciones_numerico + bano_numerico +
+                   metros_num, data = train) %>%
+  step_novel(all_nominal_predictors()) %>% 
+  step_dummy(all_nominal_predictors()) %>% 
+  step_zv(all_predictors()) 
+
+# Tune grid aleatorio para el modelo de rf
+rf_grid_random <- grid_random(  mtry(range = c(2, 10)),
+                                min_n(range = c(2, 12)),
+                                trees(range = c(100, 150)), size = 4)
+# Agregar modelos basados en árboles
+# Random Forest
+
+## Modelo de rf
+rf_spec<- rand_forest(
+  mtry = tune(),              # Hiperparámetro: Número de variables a considerar en cada división
+  min_n = tune(),             # Hiperparámetro: Profundidad mínima del árbol
+  trees = tune(),
+) %>%
+  set_engine("randomForest") %>%
+  set_mode("regression")       # Cambiar a modo de regresión
+
+workflow_rf <- workflow() %>%
+  add_recipe(recipe) %>%
+  add_model(rf_spec)
+
+tune_rf <- tune_grid(
+  workflow_rf,
+  resamples = block_folds, 
+  grid = rf_grid_random,
+  metrics = metric_set(mae))
+
+best_parms_rf<- select_best(tune_rf, metric = "mae")
+best_parms_rf
+
+rf_final <- finalize_workflow(workflow_rf, best_parms_rf)
+
+rf_final_fit <- fit(rf_final, data = train)
+
+prediccion_rf <- predict(rf_final_fit, new_data = test)
+prediccion_rf
+
+prediccion_rf <- test %>% select(property_id) %>% bind_cols(prediccion_rf) %>% rename(price = .pred, property_id = property_id)
+write.csv(prediccion_rf, file = 'Stores/prediccion_rf.csv', row.names = FALSE)
+
+
+##ESTADISTICAS DESCRIPTIVAS
+data$log_price <- log(data$price)
+
+
+
+# Crea un diagrama de caja y bigotes diferenciado por la variable dummy 'parqueadero'
+boxplot(log_price ~ parqueadero, data = data, 
+        xlab = "Parqueadero (1 = Sí, 0 = No)", 
+        ylab = "Precio de Vivienda (LOG)",
+        main = " Caja y Bigotes de Precio  por Parqueadero")
+
+# Crea un diagrama de caja y bigotes diferenciado por la variable dummy 'parqueadero'
+boxplot(log_price ~ terraza, data = data, 
+        xlab = "terraza (1 = Sí, 0 = No)", 
+        ylab = "Precio de Vivienda (Logaritmo)",
+        main = " Caja y Bigotes de Precio  por terraza")
+
+# Crea un diagrama de caja y bigotes diferenciado por la variable dummy 'parqueadero'
+boxplot(log_price ~ casa, data = data, 
+        xlab = "casa (1 = Sí, 0 = No)", 
+        ylab = "Precio de Vivienda (Logaritmo)",
+        main = " Caja y Bigotes de Precio  por casa")
+
+# Crea un diagrama de caja y bigotes diferenciado por la variable dummy 'parqueadero'
+boxplot(log_price ~ piscina, data = data, 
+        xlab = "casa (1 = Sí, 0 = No)", 
+        ylab = "Precio de Vivienda (Logaritmo)",
+        main = " Caja y Bigotes de Precio  por pisicna")
+
+install.packages("plotly")
+library(plotly)
+library(units)
+
+p1 <- ggplot(data%>%sample_n(1000), aes(x = pub, y = price)) +
+  geom_point(col = "darkblue", alpha = 0.4) +
+  geom_smooth() +
+  labs(x = "Distancia mínima a un bar en metros (metros)", 
+       y = "Valor de inmueble ",
+       title = "Relación entre la proximidad a un bar y el precio") +
+  theme_bw()
+ggplotly(p1)
+
+p2 <- ggplot(data%>%sample_n(1000), aes(x = distancia_park, y = price)) +
+  geom_point(col = "darkblue", alpha = 0.4) +
+  geom_smooth() +
+  labs(x = "Distancia mínima a un parque en metros (metros)", 
+       y = "Valor de inmueble ",
+       title = "Relación entre la proximidad a un parque y el precio") +
+  theme_bw()
+ggplotly(p2)
 
