@@ -1,9 +1,9 @@
 
-title: "Readme Problem Set 2"
-author: 'ELaborado por: Ricardo Silva, Fedrico Camacho, Andrés Chavarro & Juan David
+#  Problem Set 2
+##'ELaborado por: Ricardo Silva, Fedrico Camacho, Andrés Chavarro & Juan David
   Vélez P.'
-date: "2023-10-30"
-output: html_document
+###date: "2023-10-30"
+
 subtitle: Predicting Pirces
 
 
