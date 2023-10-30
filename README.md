@@ -1,9 +1,9 @@
 
-#  Problem Set 2
+#  **Problem Set 2**
 ## ELaborado por: Ricardo Silva, Fedrico Camacho, Andrés Chavarro & Juan David Vélez P.
 ### "2023-10-30"
 
-## Predicting Pirces
+# Predicting Pirces
 
 
 ## Datos empleados
